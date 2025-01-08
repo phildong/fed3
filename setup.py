@@ -14,7 +14,9 @@ requirements = [
     'numpy>=1.2',
     'matplotlib>=3.4',
     'pandas>=1.3',
-    'seaborn>=0.11'
+    'seaborn>=0.11',
+    'plotly',
+    'scipy'
     ]
 
 # read version
