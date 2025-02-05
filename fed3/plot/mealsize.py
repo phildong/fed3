@@ -23,22 +23,31 @@ def mealsize_hist(
     # TODO: figure out the multi-dataframe dict scheme
     dat = feds_all[0]
     # agg data
-    dat_sub = dat[dat["Event"] == event].reset_index().rename(columns={"index": "time"})
-    dat_sub["same_meal"] = dat_sub["time"].diff() < pd.Timedelta(meal_break)
-    dat_sub["meal_ct"] = label(dat_sub["same_meal"])[0]
-    dat_out = (
-        dat_sub[dat_sub["meal_ct"] > 0].groupby("meal_ct").apply(agg_meal).reset_index()
-    )
+    dat_out = label_meal(dat, event, meal_break)
     # plotting
     fig = px.histogram(dat_out, x="pellet_count")
     return _get_return_value(fig, dat_out, output)
 
 
+def label_meal(fed_df: pd.DataFrame, event: str, meal_break: str):
+    meal_df = (
+        fed_df[fed_df["Event"] == event].reset_index().rename(columns={"index": "time"})
+    )
+    meal_df["same_meal"] = meal_df["time"].diff() < pd.Timedelta(meal_break)
+    meal_ct, nmeal = label(meal_df["same_meal"])
+    meal_df["meal_ct"] = np.where(meal_ct > 0, meal_ct, np.nan)
+    meal_df["meal_ct"] = meal_df["meal_ct"].bfill().fillna(nmeal + 1)
+    meal_df = meal_df.groupby("meal_ct").apply(agg_meal).reset_index()
+    return meal_df
+
+
 def agg_meal(meal_df: pd.DataFrame, t_col="time"):
+    meta_cols = set(meal_df.columns).intersection(["Session_Type", "isDay"])
     return pd.Series(
         {
             "start_time": meal_df[t_col].iloc[0],
             "end_time": meal_df[t_col].iloc[-1],
             "pellet_count": len(meal_df),
         }
+        | {m: meal_df[m].iloc[0] for m in meta_cols}
     )

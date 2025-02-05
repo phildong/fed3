@@ -8,6 +8,18 @@ from fed3.core.fedfuncs import screen_mixed_alignment
 from fed3.plot.helpers import _get_return_value, _parse_feds
 
 
+def label_daynight(fed_df: pd.DataFrame, day_start: str, day_end: str):
+    day_idx = fed_df.index.indexer_between_time(day_start, day_end)
+    fed_df = fed_df.reset_index().rename(columns={"index": "time"})
+    fed_df["isDay"] = False
+    fed_df.loc[day_idx, "isDay"] = True
+    day_lab, nlab = label(fed_df["isDay"])
+    day_lab = np.where(day_lab > 0, day_lab, np.nan)
+    fed_df["day_ct"] = day_lab
+    fed_df["day_ct"] = fed_df["day_ct"].bfill().fillna(nlab + 1).astype(int)
+    return fed_df
+
+
 def daynight_bar(
     feds,
     event: str = "Pellet",
@@ -32,10 +44,7 @@ def daynight_bar(
         .count()
         .rename(yname)
     )
-    day_idx = dat_out.index.indexer_between_time(day_start, day_end)
-    dat_out = dat_out.reset_index().rename(columns={"index": "time"})
-    dat_out["isDay"] = False
-    dat_out.loc[day_idx, "isDay"] = True
+    dat_out = label_daynight(dat_out, day_start, day_end)
     # plotting
     fig = px.bar(dat_out, x="time", y=yname)
     night_lab, nlab = label(~dat_out["isDay"])

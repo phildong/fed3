@@ -6,28 +6,31 @@ Key operations include concatenating/splitting data, filtering, and
 temporal alignment.
 """
 
-__all__ = ['as_aligned',
-           'can_concat',
-           'concat',
-           'load',
-           'screen_mixed_alignment',
-           'split',
-           'timecrop']
+__all__ = [
+    "as_aligned",
+    "can_concat",
+    "concat",
+    "load",
+    "screen_mixed_alignment",
+    "split",
+    "timecrop",
+]
 
-from collections.abc import Iterable
 import os
 import warnings
+from collections.abc import Iterable
 
 import pandas as pd
 
 from fed3.core import FEDFrame
 
-'''Date to use when aligning data based on elapsed time or time of day.'''
+"""Date to use when aligning data based on elapsed time or time of day."""
+
 
 def _split_handle_dates(dates):
-    '''Helper function for parsing the `dates` parameter within `split().'''
-    old = pd.Timestamp('01-01-1970')
-    future = pd.Timestamp('12-31-2200')
+    """Helper function for parsing the `dates` parameter within `split()."""
+    old = pd.Timestamp("01-01-1970")
+    future = pd.Timestamp("12-31-2200")
     if not isinstance(dates, Iterable) or isinstance(dates, str):
         dates = [old, pd.to_datetime(dates), future]
     else:
@@ -36,8 +39,9 @@ def _split_handle_dates(dates):
 
     return dates
 
+
 def as_aligned(feds, alignment, inplace=False):
-    '''
+    """
     Helper function for setting the alignment of one or more FEDFrames.
     See `fed3.core.fedframe.FEDFrame.set_alignment()` for more information.
 
@@ -56,13 +60,14 @@ def as_aligned(feds, alignment, inplace=False):
     aligned or None
         Either one FEDFrame or a list of FEDFrames with new alignment..
 
-    '''
+    """
     if isinstance(feds, FEDFrame):
         aligned = feds.set_alignment(alignment, inplace=inplace)
     else:
         aligned = [f.set_alignment(alignment) for f in feds]
 
     return aligned
+
 
 def can_concat(feds):
     """
@@ -81,13 +86,18 @@ def can_concat(feds):
     """
     sorted_feds = sorted(feds, key=lambda x: x.start_time)
     for i, file in enumerate(sorted_feds[1:], start=1):
-        if file.start_time <= sorted_feds[i-1].end_time:
+        if file.start_time <= sorted_feds[i - 1].end_time:
             return False
     return True
 
-def concat(feds, name=None, add_concat_number=True,
-           reset_columns=('Pellet_Count', 'Left_Poke_Count','Right_Poke_Count')):
-    '''
+
+def concat(
+    feds,
+    name=None,
+    add_concat_number=True,
+    reset_columns=("Pellet_Count", "Left_Poke_Count", "Right_Poke_Count"),
+):
+    """
     Concatenated FED3 data in time.
 
     Parameters
@@ -115,15 +125,15 @@ def concat(feds, name=None, add_concat_number=True,
     newfed : fed3.FEDFrame
         New FEDFrame object with concatenated data.
 
-    '''
+    """
 
     if name is None:
         name = feds[0].name
 
     if not can_concat(feds):
-        raise ValueError('FEDFrame dates overlap, cannot concat.')
+        raise ValueError("FEDFrame dates overlap, cannot concat.")
 
-    output=[]
+    output = []
     offsets = {}
 
     sorted_feds = sorted(feds, key=lambda x: x.start_time)
@@ -131,9 +141,9 @@ def concat(feds, name=None, add_concat_number=True,
     for i, fed in enumerate(sorted_feds):
         df = fed.copy()
         if add_concat_number:
-            df['Concat_#'] = i
+            df["Concat_#"] = i
 
-        if i==0:
+        if i == 0:
             for col in reset_columns:
                 if col in df.columns:
                     offsets[col] = df[col].max()
@@ -150,8 +160,9 @@ def concat(feds, name=None, add_concat_number=True,
 
     return newfed
 
+
 def determine_alignment(feds):
-    '''
+    """
     Return the temporal alignment for a FEDFrame or group of FEDFrames.
     See `align()` for more information.
 
@@ -166,14 +177,21 @@ def determine_alignment(feds):
         'datetime', 'time', 'elapsed', or 'mixed' (the latter when
         there are multiple alignment types).
 
-    '''
+    """
     alignments = set(f._alignment for f in feds)
-    return 'mixed' if len(alignments) > 1 else list(alignments)[0]
+    return "mixed" if len(alignments) > 1 else list(alignments)[0]
 
-def load(path, index_col='MM:DD:YYYY hh:mm:ss', dropna=True,
-         deduplicate_index=None, offset='1S', reset_counts=False,
-         reset_columns=('Pellet_Count', 'Left_Poke_Count', 'Right_Poke_Count')):
-    '''
+
+def load(
+    path,
+    index_col="MM:DD:YYYY hh:mm:ss",
+    dropna=True,
+    deduplicate_index=None,
+    offset="1S",
+    reset_counts=False,
+    reset_columns=("Pellet_Count", "Left_Poke_Count", "Right_Poke_Count"),
+):
+    """
     Load FED3 data from a CSV/Excel file.  This is the typical
     recommended way for importing FED3 data.  Relies mostly
     on `pandas.read_csv()` and `pandas.read_excel()` for the parsing.
@@ -195,32 +213,33 @@ def load(path, index_col='MM:DD:YYYY hh:mm:ss', dropna=True,
     f : fed3.FEDFrame
         New FEDFrame object.
 
-    '''
+    """
     # read the path
     name, ext = os.path.splitext(path)
     ext = ext.lower()
 
-    read_opts = {'.csv':pd.read_csv, '.xlsx':pd.read_excel}
+    read_opts = {".csv": pd.read_csv, ".xlsx": pd.read_excel}
     func = read_opts[ext]
-    feddata = func(path,
-                   parse_dates=True,
-                   index_col=index_col)
+    feddata = func(path, parse_dates=True, index_col=index_col)
     if dropna:
-        feddata = feddata.dropna(how='all')
+        feddata = feddata.dropna(how="all")
 
     name = os.path.basename(name)
     f = FEDFrame(feddata)
-    f._load_init(name=name,
-                 path=path,
-                 deduplicate_index=deduplicate_index,
-                 offset=offset,
-                 reset_counts=reset_counts,
-                 reset_columns=reset_columns)
+    f._load_init(
+        name=name,
+        path=path,
+        deduplicate_index=deduplicate_index,
+        offset=offset,
+        reset_counts=reset_counts,
+        reset_columns=reset_columns,
+    )
 
     return f
 
-def screen_mixed_alignment(feds, option='raise'):
-    '''
+
+def screen_mixed_alignment(feds, option="raise"):
+    """
     Check FEDFrames for having mixed alignment styles (see `align()`).
     This is called by most plots witin `fed3.plot` for the `mixed_align`
     parameter.
@@ -244,27 +263,33 @@ def screen_mixed_alignment(feds, option='raise'):
     alignment : str
         Alignment string returned by `determine_alignment()`.
 
-    '''
+    """
 
     alignment = determine_alignment(feds)
 
-    if alignment != 'mixed':
+    if alignment != "mixed":
         return alignment
 
-    if option == 'raise':
-        raise ValueError('The passed FEDFrames have mixed alignment.')
+    if option == "raise":
+        raise ValueError("The passed FEDFrames have mixed alignment.")
 
-    elif option == 'warn':
+    elif option == "warn":
         warnings.warn("The passed FEDFrames have mixed alignment.")
 
-    elif option != 'ignore':
+    elif option != "ignore":
         raise ValueError('Mixed alignment option must be "ignore", "warn", or "raise"')
 
     return alignment
 
-def split(fed, dates, reset_columns=('Pellet_Count', 'Left_Poke_Count', 'Right_Poke_Count'),
-          return_empty=False, tag_name=True):
-    '''
+
+def split(
+    fed,
+    dates,
+    reset_columns=("Pellet_Count", "Left_Poke_Count", "Right_Poke_Count"),
+    return_empty=False,
+    tag_name=True,
+):
+    """
     Split one FEDFrame into a multiple based on one or more dates.
 
     Parameters
@@ -286,16 +311,15 @@ def split(fed, dates, reset_columns=('Pellet_Count', 'Left_Poke_Count', 'Right_P
     output : list
         List of FED3 objects created by split.
 
-    '''
+    """
     dates = _split_handle_dates(dates)
     output = []
     offsets = {col: 0 for col in reset_columns}
     og_name = fed.name
     for i in range(len(dates[:-1])):
         start = dates[i]
-        end = dates[i+1]
-        subset = fed[(fed.index >= start) &
-                     (fed.index < end)].copy()
+        end = dates[i + 1]
+        subset = fed[(fed.index >= start) & (fed.index < end)].copy()
         if tag_name:
             subset.name = f"{og_name}_{i}"
         if not return_empty and subset.empty:
@@ -307,10 +331,15 @@ def split(fed, dates, reset_columns=('Pellet_Count', 'Left_Poke_Count', 'Right_P
         output.append(subset)
     return output
 
-def timecrop(fed, start, end,
-             reset_columns=('Pellet_Count', 'Left_Poke_Count', 'Right_Poke_Count'),
-             name=None):
-    '''
+
+def timecrop(
+    fed,
+    start,
+    end,
+    reset_columns=("Pellet_Count", "Left_Poke_Count", "Right_Poke_Count"),
+    name=None,
+):
+    """
     Return a new FEDFrame cropped in time to only include data between two
     dates.
 
@@ -333,11 +362,10 @@ def timecrop(fed, start, end,
     newfed : fed3.FEDFrame
         New FEDFrame object after filtering.
 
-    '''
+    """
 
     prior = fed[(fed.index < start)]
-    newfed = fed[(fed.index >= start) &
-                 (fed.index < end)].copy()
+    newfed = fed[(fed.index >= start) & (fed.index < end)].copy()
     for col in reset_columns:
         if not prior.empty:
             newfed[col] -= prior[col].max()
