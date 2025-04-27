@@ -16,7 +16,9 @@ requirements = [
     'pandas>=1.3',
     'seaborn>=0.11',
     'plotly',
-    'scipy'
+    'scipy',
+    'ipywidgets',
+    'panel'
     ]
 
 # read version
