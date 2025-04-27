@@ -12,10 +12,22 @@ def agg_duration(df, tcol="time", unit="1 hour"):
     return (df[tcol].max() - df[tcol].min()) / pd.Timedelta(unit)
 
 
-def export_summary(
-    fed, day_start: str = "8:00:00", day_end: str = "20:00:00", meal_break: str = "5min"
+def export_summary(fed_df, tcol: str = "MM:DD:YYYY hh:mm:ss", **kwargs):
+    summary = (
+        fed_df.set_index(tcol)
+        .groupby("group")
+        .apply(compute_summary, **kwargs)
+        .reset_index()
+    )
+    return summary
+
+
+def compute_summary(
+    f: pd.DataFrame,
+    day_start: str = "8:00:00",
+    day_end: str = "20:00:00",
+    meal_break: str = "5min",
 ):
-    f = fed  # TODO: add support for multiple datasets
     f = label_daynight(f, day_start, day_end)
     dur = agg_duration(f)
     dur_dn = (
