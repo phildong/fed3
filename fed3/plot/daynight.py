@@ -10,7 +10,7 @@ from fed3.plot.helpers import _get_return_value, _parse_feds
 
 def label_daynight(fed_df: pd.DataFrame, day_start: str, day_end: str):
     day_idx = fed_df.index.indexer_between_time(day_start, day_end)
-    fed_df = fed_df.reset_index().rename(columns={"index": "time"})
+    fed_df = fed_df.rename_axis(index="time").reset_index()
     fed_df["isDay"] = False
     fed_df.loc[day_idx, "isDay"] = True
     day_lab, nlab = label(fed_df["isDay"])
@@ -21,32 +21,34 @@ def label_daynight(fed_df: pd.DataFrame, day_start: str, day_end: str):
 
 
 def daynight_bar(
-    feds,
+    fed_df,
     event: str = "Pellet",
+    tcol: str = "MM:DD:YYYY hh:mm:ss",
     bin_width: str = "30min",
     day_start: str = "8:00:00",
     day_end: str = "20:00:00",
     mixed_align: str = "raise",
+    agg_grp: str = None,
     output="plot",
 ):
-    # parse inputs
-    feds_dict = _parse_feds(feds)
-    feds_all = list(*feds_dict.values())
-    # screen issues alignment
-    alignment = screen_mixed_alignment(feds_all, option=mixed_align)
-    # TODO: figure out the multi-dataframe dict scheme
-    dat = feds_all[0]
     # agg data
     yname = event + " Count"
     dat_out = (
-        dat[dat["Event"] == event]
-        .groupby(pd.Grouper(freq=bin_width))["Event"]
+        fed_df[fed_df["Event"] == event]
+        .set_index(tcol)
+        .groupby(["group", "dpath", pd.Grouper(freq=bin_width)])["Event"]
         .count()
         .rename(yname)
+        .reset_index()
     )
+    if agg_grp is not None:
+        dat_out = dat_out.groupby(["group", tcol])[yname].agg(agg_grp).reset_index()
+    else:
+        dat_out = dat_out.drop(columns="group").rename(columns={"dpath": "group"})
+    dat_out = dat_out.sort_values(tcol).set_index(tcol)
     dat_out = label_daynight(dat_out, day_start, day_end)
     # plotting
-    fig = px.bar(dat_out, x="time", y=yname)
+    fig = px.bar(dat_out, x="time", y=yname, color="group", barmode="group")
     night_lab, nlab = label(~dat_out["isDay"])
     for ilab in range(1, nlab + 1):
         loc = np.where(night_lab == ilab)[0]
