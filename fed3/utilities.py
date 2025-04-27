@@ -114,8 +114,9 @@ class FED3DATA:
         dfs = []
         for dp, grp in self.dpath_dict.items():
             df = load(dp, **kwargs)
+            df["dpath"] = dp
             df["group"] = grp
-            dfs.append(df)
+            dfs.append(df.reset_index())
             self.grouped[grp].append(df)
         self.data_combined = pd.concat(dfs, ignore_index=True)
         print(
