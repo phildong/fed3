@@ -1,5 +1,8 @@
 import pandas as pd
+import panel as pn
+from IPython.display import display
 
+from fed3.core.fedfuncs import load
 from fed3.metrics.core import get_metric
 from fed3.plot.daynight import label_daynight
 from fed3.plot.mealsize import label_meal
@@ -61,3 +64,62 @@ def export_summary(
     mot = get_metric("motor")[0](f.copy())
     agg_res["motor_count"] = (mot > 10).sum()
     return pd.Series(agg_res).rename("value").to_frame()
+
+
+class FED3DATA:
+    def __init__(self):
+        self.dpaths = set()
+        self.dpath_dict = None
+        self.data_combined = None
+
+    def select_data(self):
+        fs = pn.widgets.FileSelector(
+            directory=".",
+            root_directory="/",
+            only_files=True,
+            name="Select FED Data Files",
+        )
+        fs.param.watch(self._on_sel_data, ["value"], onlychanged=True)
+        display(fs)
+
+    def _on_sel_data(self, event) -> None:
+        for dp in event.new:
+            self.dpaths.add(dp)
+
+    def assign_group(self):
+        assert len(self.dpaths) > 0, "Please add data files first!"
+        self.dpath_dict = {dp: "default" for dp in self.dpaths}
+        wdps = []
+        for dp in self.dpaths:
+            wdp = pn.widgets.TextInput(
+                name=dp,
+                placeholder="default",
+                value="default",
+                sizing_mode="stretch_width",
+            )
+            wdp.param.watch(self._on_assn_grp, ["value"], onlychanged=True)
+            wdps.append(wdp)
+        wbox = pn.WidgetBox(*wdps)
+        display(wbox)
+
+    def _on_assn_grp(self, event) -> None:
+        dp = event.obj.name
+        self.dpath_dict[dp] = event.new
+
+    def load_data(self, **kwargs) -> None:
+        assert len(self.dpaths) > 0, "Please add data files first!"
+        if self.dpath_dict is None:
+            self.dpath_dict = {dp: "default" for dp in self.dpaths}
+        self.grouped = {g: [] for g in set(self.dpath_dict.values())}
+        dfs = []
+        for dp, grp in self.dpath_dict.items():
+            df = load(dp, **kwargs)
+            df["group"] = grp
+            dfs.append(df)
+            self.grouped[grp].append(df)
+        self.data_combined = pd.concat(dfs, ignore_index=True)
+        print(
+            "Loaded {} data with {} groups: {}".format(
+                len(self.dpath_dict), len(self.grouped), list(self.grouped.keys())
+            )
+        )
