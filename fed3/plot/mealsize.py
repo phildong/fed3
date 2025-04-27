@@ -9,30 +9,27 @@ from fed3.plot.helpers import _get_return_value, _parse_feds
 
 
 def mealsize_hist(
-    feds,
+    fed_df,
     event: str = "Pellet",
+    tcol: str = "MM:DD:YYYY hh:mm:ss",
     meal_break: str = "30min",
     mixed_align: str = "raise",
     output="plot",
 ):
-    # parse inputs
-    feds_dict = _parse_feds(feds)
-    feds_all = list(*feds_dict.values())
-    # screen issues alignment
-    alignment = screen_mixed_alignment(feds_all, option=mixed_align)
-    # TODO: figure out the multi-dataframe dict scheme
-    dat = feds_all[0]
     # agg data
-    dat_out = label_meal(dat, event, meal_break)
+    fed_df = fed_df.sort_values(tcol).set_index(tcol)
+    dat_out = (
+        fed_df.groupby("group")
+        .apply(label_meal, event=event, meal_break=meal_break)
+        .reset_index()
+    )
     # plotting
-    fig = px.histogram(dat_out, x="pellet_count")
+    fig = px.histogram(dat_out, x="pellet_count", color="group", barmode="group")
     return _get_return_value(fig, dat_out, output)
 
 
 def label_meal(fed_df: pd.DataFrame, event: str, meal_break: str):
-    meal_df = (
-        fed_df[fed_df["Event"] == event].reset_index().rename(columns={"index": "time"})
-    )
+    meal_df = fed_df[fed_df["Event"] == event].rename_axis(index="time").reset_index()
     meal_df["same_meal"] = meal_df["time"].diff() < pd.Timedelta(meal_break)
     meal_ct, nmeal = label(meal_df["same_meal"])
     meal_df["meal_ct"] = np.where(meal_ct > 0, meal_ct, np.nan)
