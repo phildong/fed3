@@ -29,6 +29,7 @@ def label_daynight(fed_df: pd.DataFrame, day_start: str, day_end: str):
 def daynight_plot(
     fed_df,
     kind="line",
+    cummulative=False,
     event: str = "Pellet",
     tcol: str = "MM:DD:YYYY hh:mm:ss",
     anmcol: str = "animal",
@@ -63,6 +64,8 @@ def daynight_plot(
         dat_out = dat_out.drop(columns="group").rename(columns={"dpath": "group"})
     dat_out = dat_out.sort_values(tcol).set_index(tcol)
     dat_out = label_daynight(dat_out, day_start, day_end)
+    if cummulative:
+        dat_out[yname] = dat_out.groupby("group")[yname].cumsum()
     # plotting
     if kind == "line":
         fig = line_plot(dat_out, time_col="time", value_col=yname)
