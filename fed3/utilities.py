@@ -98,7 +98,7 @@ class FED3DATA:
         for dp in event.new:
             self.dpaths.add(dp)
 
-    def assign_group(self):
+    def assign_metadata(self):
         assert len(self.dpaths) > 0, "Please add data files first!"
         self.dpath_dict = {dp: "default" for dp in self.dpaths}
         wdps = []
