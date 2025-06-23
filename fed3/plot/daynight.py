@@ -9,6 +9,9 @@ from fed3.plot.helpers import _get_return_value, _parse_feds
 
 
 def label_daynight(fed_df: pd.DataFrame, day_start: str, day_end: str):
+    if isinstance(fed_df.index, pd.TimedeltaIndex):
+        fed_df.index = fed_df.index + pd.Timestamp("2025")
+    assert isinstance(fed_df.index, pd.DatetimeIndex)
     day_idx = fed_df.index.indexer_between_time(day_start, day_end)
     fed_df = fed_df.rename_axis(index="time").reset_index()
     fed_df["isDay"] = False
