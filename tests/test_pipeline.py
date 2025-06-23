@@ -103,12 +103,12 @@ for root, dirs, files in os.walk(IN_DPATH):
     dpaths.extend([os.path.join(root, cf) for cf in csvf])
 fed_data = FED3DATA()
 fed_data.select_data(dpaths)
-fed_data.assign_metadata(rel_start=True)
+fed_data.assign_metadata(PARAM_META_DICT)
 
 # %% load data and process
 fed_data.load_data()
 fig_daynight = fplot.daynight_plot(
-    fed_data.data_combined, agg_grp="sum", tcol="elps_time"
+    fed_data.data_combined, agg_grp="sum", tcol="elps_time", cummulative=True
 )
 fig_msize = fplot.mealsize_hist(fed_data.data_combined)
 summary = export_summary(fed_data.data_combined)
