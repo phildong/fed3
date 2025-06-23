@@ -5,7 +5,7 @@ import panel as pn
 
 import fed3
 import fed3.plot as fplot
-from fed3.utilities import FED3DATA, export_summary
+from fed3.utilities import FED3DATA, agg_events, export_summary
 
 pn.extension()
 
@@ -113,3 +113,5 @@ fig_daynight = fplot.daynight_plot(
 fig_msize = fplot.mealsize_hist(fed_data.data_combined)
 summary = export_summary(fed_data.data_combined)
 summary.to_csv(os.path.join(OUT_PATH, "summary.csv"))
+events = agg_events(fed_data.data_combined)
+events.to_csv(os.path.join(OUT_PATH, "events.csv"))

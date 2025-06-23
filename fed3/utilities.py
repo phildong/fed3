@@ -23,6 +23,17 @@ def export_summary(fed_df, tcol: str = "MM:DD:YYYY hh:mm:ss", **kwargs):
     return summary
 
 
+def agg_events(fed_df, tcol: str = "elps_time", anmcol: str = "animal", trange=None):
+    if trange is not None:
+        t0, t1 = pd.Timedelta(trange[0]), pd.Timedelta(trange[1])
+        fed_df = fed_df[(fed_df[tcol] >= t0) & (fed_df[tcol] <= t1)].copy()
+    if anmcol is not None:
+        grp_cols = ["Event", "group", "animal"]
+    else:
+        grp_cols["Event", "group"]
+    return fed_df.groupby(grp_cols).size().rename("count").reset_index()
+
+
 def compute_summary(
     f: pd.DataFrame,
     day_start: str = "8:00:00",
