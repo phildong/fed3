@@ -103,7 +103,7 @@ class FED3DATA:
         for dp in event.new:
             self.dpaths.add(dp)
 
-    def assign_metadata(self, meta_dict=None):
+    def assign_metadata(self, meta_dict=None, rel_start=False):
         assert len(self.dpaths) > 0, "Please add data files first!"
         if meta_dict is None:
             self.meta_dict = {dp: dict() for dp in self.dpaths}
@@ -143,6 +143,8 @@ class FED3DATA:
                 self._wgt_anms.append(w_anm)
                 self.meta_dict[dp]["group"] = "default"
                 self.meta_dict[dp]["animal"] = "animal{}".format(idp)
+                if rel_start:
+                    self.meta_dict[dp]["start_time"] = "start"
             wbox = pn.Column(*wgts)
             display(wbox)
         else:
@@ -187,6 +189,8 @@ class FED3DATA:
             st = mdict.get("start_time", None)
             df["group"] = grp
             df["animal"] = anm
+            if st == "start":
+                st = df.loc[0, t_col]
             if st is not None:
                 df["rel_time"] = df[t_col] - st
             else:

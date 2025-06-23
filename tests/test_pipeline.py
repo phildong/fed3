@@ -18,7 +18,7 @@ for root, dirs, files in os.walk(IN_DPATH):
     dpaths.extend([os.path.join(root, cf) for cf in csvf])
 fed_data = FED3DATA()
 fed_data.select_data(dpaths)
-fed_data.assign_metadata()
+fed_data.assign_metadata(rel_start=True)
 
 # %% load data
 fed_data.load_data()
