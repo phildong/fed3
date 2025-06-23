@@ -192,9 +192,9 @@ class FED3DATA:
             if st == "start":
                 st = df.loc[0, t_col]
             if st is not None:
-                df["rel_time"] = df[t_col] - st
+                df["elps_time"] = df[t_col] - st
             else:
-                df["rel_time"] = np.nan
+                df["elps_time"] = np.nan
             dfs.append(df)
             self.grouped[grp].append(df)
         self.data_combined = pd.concat(dfs, ignore_index=True)
