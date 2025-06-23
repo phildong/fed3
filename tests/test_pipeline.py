@@ -11,7 +11,7 @@ pn.extension()
 
 IN_DPATH = "./data/20250606/"
 
-# %% run pipeline
+# %% select data
 dpaths = []
 for root, dirs, files in os.walk(IN_DPATH):
     csvf = list(filter(lambda fn: fn.lower().endswith(".csv"), files))
@@ -19,4 +19,6 @@ for root, dirs, files in os.walk(IN_DPATH):
 fed_data = FED3DATA()
 fed_data.select_data(dpaths)
 fed_data.assign_metadata()
+
+# %% load data
 fed_data.load_data()

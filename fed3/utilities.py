@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import panel as pn
 from IPython.display import display
@@ -171,17 +172,26 @@ class FED3DATA:
         for w in self._wgt_anms:
             w.options = opts
 
-    def load_data(self, **kwargs) -> None:
+    def load_data(self, t_col="MM:DD:YYYY hh:mm:ss", **kwargs) -> None:
         assert len(self.dpaths) > 0, "Please add data files first!"
         if self.meta_dict is None:
-            self.meta_dict = {dp: "default" for dp in self.dpaths}
-        self.grouped = {g: [] for g in set(self.meta_dict.values())}
+            self.meta_dict = {dp: dict() for dp in self.dpaths}
+        grps = set([m.get("group", "default") for m in self.meta_dict.values()])
+        self.grouped = {g: [] for g in grps}
         dfs = []
-        for dp, grp in self.meta_dict.items():
-            df = load(dp, **kwargs)
+        for dp, mdict in self.meta_dict.items():
+            df = load(dp, **kwargs).reset_index()
             df["dpath"] = dp
+            grp = mdict.get("group", "default")
+            anm = mdict.get("animal", np.nan)
+            st = mdict.get("start_time", None)
             df["group"] = grp
-            dfs.append(df.reset_index())
+            df["animal"] = anm
+            if st is not None:
+                df["rel_time"] = df[t_col] - st
+            else:
+                df["rel_time"] = np.nan
+            dfs.append(df)
             self.grouped[grp].append(df)
         self.data_combined = pd.concat(dfs, ignore_index=True)
         print(
