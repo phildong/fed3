@@ -81,7 +81,7 @@ def compute_summary(
 class FED3DATA:
     def __init__(self):
         self.dpaths = set()
-        self.dpath_dict = None
+        self.meta_dict = None
         self.data_combined = None
 
     def select_data(self, dpaths=None):
@@ -102,36 +102,60 @@ class FED3DATA:
         for dp in event.new:
             self.dpaths.add(dp)
 
-    def assign_metadata(self, dpath_dict=None):
+    def assign_metadata(self, meta_dict=None):
         assert len(self.dpaths) > 0, "Please add data files first!"
-        if dpath_dict is None:
-            self.dpath_dict = {dp: "default" for dp in self.dpaths}
-            wdps = []
-            for dp in self.dpaths:
-                wdp = pn.widgets.TextInput(
-                    name=dp,
+        if meta_dict is None:
+            self.meta_dict = {dp: dict() for dp in self.dpaths}
+            wgts = []
+            for idp, dp in enumerate(self.dpaths):
+                w_dp = pn.pane.Markdown("## {}".format(dp))
+                w_grp = pn.widgets.TextInput(
+                    name="group",
                     placeholder="default",
                     value="default",
                     sizing_mode="stretch_width",
                 )
-                wdp.param.watch(self._on_assn_grp, ["value"], onlychanged=True)
-                wdps.append(wdp)
-            wbox = pn.WidgetBox(*wdps)
+                w_anm = pn.widgets.TextInput(
+                    name="animal",
+                    placeholder="animal{}".format(idp),
+                    value="animal{}".format(idp),
+                    sizing_mode="stretch_width",
+                )
+                w_st = pn.widgets.DatetimePicker(
+                    name="start time", sizing_mode="stretch_width"
+                )
+                w_grp._dpath = dp
+                w_anm._dpath = dp
+                w_st._dpath = dp
+                w_grp.param.watch(self._on_updt_grp, ["value"], onlychanged=True)
+                w_anm.param.watch(self._on_updt_anm, ["value"], onlychanged=True)
+                w_st.param.watch(self._on_updt_st, ["value"], onlychanged=True)
+                w_row = pn.Column(pn.layout.Divider(), w_dp, pn.Row(w_grp, w_anm, w_st))
+                wgts.append(w_row)
+            wbox = pn.Column(*wgts)
             display(wbox)
         else:
-            self.dpath_dict = dpath_dict
+            self.meta_dict = meta_dict
 
-    def _on_assn_grp(self, event) -> None:
-        dp = event.obj.name
-        self.dpath_dict[dp] = event.new
+    def _on_updt_grp(self, event) -> None:
+        dp = event.obj._dpath
+        self.meta_dict[dp]["group"] = event.new
+
+    def _on_updt_anm(self, event) -> None:
+        dp = event.obj._dpath
+        self.meta_dict[dp]["animal"] = event.new
+
+    def _on_updt_st(self, event) -> None:
+        dp = event.obj._dpath
+        self.meta_dict[dp]["start_time"] = event.new
 
     def load_data(self, **kwargs) -> None:
         assert len(self.dpaths) > 0, "Please add data files first!"
-        if self.dpath_dict is None:
-            self.dpath_dict = {dp: "default" for dp in self.dpaths}
-        self.grouped = {g: [] for g in set(self.dpath_dict.values())}
+        if self.meta_dict is None:
+            self.meta_dict = {dp: "default" for dp in self.dpaths}
+        self.grouped = {g: [] for g in set(self.meta_dict.values())}
         dfs = []
-        for dp, grp in self.dpath_dict.items():
+        for dp, grp in self.meta_dict.items():
             df = load(dp, **kwargs)
             df["dpath"] = dp
             df["group"] = grp
@@ -140,6 +164,6 @@ class FED3DATA:
         self.data_combined = pd.concat(dfs, ignore_index=True)
         print(
             "Loaded {} data with {} groups: {}".format(
-                len(self.dpath_dict), len(self.grouped), list(self.grouped.keys())
+                len(self.meta_dict), len(self.grouped), list(self.grouped.keys())
             )
         )
