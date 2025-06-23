@@ -11,7 +11,7 @@ OPTIONS = {"default_shadedark": True, "default_legend": True}
 
 from .barchart import bar
 from .chronogram import chronogram_circle, chronogram_line, chronogram_spiny
-from .daynight import daynight_bar
+from .daynight import daynight_plot
 from .helpers import argh, legend
 from .ipi import ipi
 from .mealsize import mealsize_hist
@@ -24,7 +24,7 @@ __all__ = [
     "chronogram_circle",
     "chronogram_line",
     "chronogram_spiny",
-    "daynight_bar",
+    "daynight_plot",
     "ipi",
     "legend",
     "line",
