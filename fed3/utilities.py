@@ -84,35 +84,42 @@ class FED3DATA:
         self.dpath_dict = None
         self.data_combined = None
 
-    def select_data(self):
-        fs = pn.widgets.FileSelector(
-            directory=".",
-            root_directory="/",
-            only_files=True,
-            name="Select FED Data Files",
-        )
-        fs.param.watch(self._on_sel_data, ["value"], onlychanged=True)
-        display(fs)
+    def select_data(self, dpaths=None):
+        if dpaths is None:
+            fs = pn.widgets.FileSelector(
+                directory=".",
+                root_directory="/",
+                only_files=True,
+                name="Select FED Data Files",
+            )
+            fs.param.watch(self._on_sel_data, ["value"], onlychanged=True)
+            display(fs)
+        else:
+            self.dpaths = dpaths
+            print("Selected {} files".format(len(dpaths)))
 
     def _on_sel_data(self, event) -> None:
         for dp in event.new:
             self.dpaths.add(dp)
 
-    def assign_metadata(self):
+    def assign_metadata(self, dpath_dict=None):
         assert len(self.dpaths) > 0, "Please add data files first!"
-        self.dpath_dict = {dp: "default" for dp in self.dpaths}
-        wdps = []
-        for dp in self.dpaths:
-            wdp = pn.widgets.TextInput(
-                name=dp,
-                placeholder="default",
-                value="default",
-                sizing_mode="stretch_width",
-            )
-            wdp.param.watch(self._on_assn_grp, ["value"], onlychanged=True)
-            wdps.append(wdp)
-        wbox = pn.WidgetBox(*wdps)
-        display(wbox)
+        if dpath_dict is None:
+            self.dpath_dict = {dp: "default" for dp in self.dpaths}
+            wdps = []
+            for dp in self.dpaths:
+                wdp = pn.widgets.TextInput(
+                    name=dp,
+                    placeholder="default",
+                    value="default",
+                    sizing_mode="stretch_width",
+                )
+                wdp.param.watch(self._on_assn_grp, ["value"], onlychanged=True)
+                wdps.append(wdp)
+            wbox = pn.WidgetBox(*wdps)
+            display(wbox)
+        else:
+            self.dpath_dict = dpath_dict
 
     def _on_assn_grp(self, event) -> None:
         dp = event.obj.name
