@@ -107,18 +107,24 @@ class FED3DATA:
         if meta_dict is None:
             self.meta_dict = {dp: dict() for dp in self.dpaths}
             wgts = []
+            self._wgt_grps = []
+            self._wgt_anms = []
             for idp, dp in enumerate(self.dpaths):
                 w_dp = pn.pane.Markdown("## {}".format(dp))
-                w_grp = pn.widgets.TextInput(
+                w_grp = pn.widgets.AutocompleteInput(
                     name="group",
                     placeholder="default",
-                    value="default",
+                    restrict=False,
+                    search_strategy="includes",
+                    min_characters=1,
                     sizing_mode="stretch_width",
                 )
-                w_anm = pn.widgets.TextInput(
+                w_anm = pn.widgets.AutocompleteInput(
                     name="animal",
                     placeholder="animal{}".format(idp),
-                    value="animal{}".format(idp),
+                    restrict=False,
+                    search_strategy="includes",
+                    min_characters=1,
                     sizing_mode="stretch_width",
                 )
                 w_st = pn.widgets.DatetimePicker(
@@ -132,6 +138,10 @@ class FED3DATA:
                 w_st.param.watch(self._on_updt_st, ["value"], onlychanged=True)
                 w_row = pn.Column(pn.layout.Divider(), w_dp, pn.Row(w_grp, w_anm, w_st))
                 wgts.append(w_row)
+                self._wgt_grps.append(w_grp)
+                self._wgt_anms.append(w_anm)
+                self.meta_dict[dp]["group"] = "default"
+                self.meta_dict[dp]["animal"] = "animal{}".format(idp)
             wbox = pn.Column(*wgts)
             display(wbox)
         else:
@@ -140,14 +150,26 @@ class FED3DATA:
     def _on_updt_grp(self, event) -> None:
         dp = event.obj._dpath
         self.meta_dict[dp]["group"] = event.new
+        self._refresh_grp_opts()
 
     def _on_updt_anm(self, event) -> None:
         dp = event.obj._dpath
         self.meta_dict[dp]["animal"] = event.new
+        self._refresh_anm_opts()
 
     def _on_updt_st(self, event) -> None:
         dp = event.obj._dpath
         self.meta_dict[dp]["start_time"] = event.new
+
+    def _refresh_grp_opts(self) -> None:
+        opts = list(set([w.value for w in self._wgt_grps]))
+        for w in self._wgt_grps:
+            w.options = opts
+
+    def _refresh_anm_opts(self) -> None:
+        opts = list(set([w.value for w in self._wgt_anms]))
+        for w in self._wgt_anms:
+            w.options = opts
 
     def load_data(self, **kwargs) -> None:
         assert len(self.dpaths) > 0, "Please add data files first!"
