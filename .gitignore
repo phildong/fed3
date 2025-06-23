@@ -133,3 +133,6 @@ dmypy.json
 # data
 /notebooks/*.csv
 /tests/data/*
+
+# vscode
+.vscode
