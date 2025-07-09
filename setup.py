@@ -18,7 +18,8 @@ requirements = [
     'plotly',
     'scipy',
     'ipywidgets',
-    'panel'
+    'panel',
+    'pyviz_comms'
     ]
 
 # read version
